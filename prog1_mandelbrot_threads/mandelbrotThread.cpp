@@ -2,6 +2,7 @@
 #include <thread>
 
 #include "CycleTimer.h"
+#include <cstdlib>
 
 typedef struct {
     float x0, x1;
@@ -35,7 +36,22 @@ void workerThreadStart(WorkerArgs * const args) {
     // program that uses two threads, thread 0 could compute the top
     // half of the image and thread 1 could compute the bottom half.
 
-    printf("Hello world from thread %d\n", args->threadId);
+    int threadId = args->threadId;
+    int numThreads = args->numThreads;
+    int height = args->height;
+
+    int startRow = threadId;
+
+    for (int i = startRow; i < height; i += numThreads) {
+        mandelbrotSerial(
+            args->x0, args->y0, args->x1, args->y1,
+            args->width, args->height,
+            i, 1,
+            args->maxIterations,
+            args->output
+        );
+    }
+
 }
 
 //
@@ -93,4 +109,3 @@ void mandelbrotThread(
         workers[i].join();
     }
 }
-
