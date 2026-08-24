@@ -324,15 +324,20 @@ float arraySumVector(float* values, int N) {
   // CS149 STUDENTS TODO: Implement your vectorized version of arraySumSerial here
   //
 
-  __cs149_mask maskAll;
+  __cs149_mask maskAll = _cs149_init_ones();
+  __cs149_vec_float current;
+  __cs149_vec_float temporary;
+  __cs149_vec_float accumulator = _cs149_vset_float(0.f);
 
-  float sum = 0;
   for (int i=0; i<N; i+=VECTOR_WIDTH) {
-    int validLanes = std::min(VECTOR_WIDTH, N - i);
-    maskAll = _cs149_init_ones(validLanes);
-
-
+    _cs149_vload_float(current, values+i, maskAll);
+    _cs149_vadd_float(accumulator, accumulator, current, maskAll);
   }
 
-  return sum;
+  for (int width=VECTOR_WIDTH; width>1; width/=2) {
+    _cs149_hadd_float(temporary, accumulator);
+    _cs149_interleave_float(accumulator, temporary);
+  }
+
+  return accumulator.value[0];
 }
