@@ -249,6 +249,59 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
   // Your solution should work for any value of
   // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
   //
+
+  __cs149_vec_float x;
+  __cs149_vec_float result;
+  __cs149_vec_int count;
+  __cs149_vec_float maxValue = _cs149_vset_float(9.999999f);
+  __cs149_vec_int zeroInt = _cs149_vset_int(0);
+  __cs149_vec_float zeroFloat = _cs149_vset_float(0.f);
+  __cs149_vec_float onesFloat = _cs149_vset_float(1.f);
+  __cs149_vec_int onesInt = _cs149_vset_int(1);
+  __cs149_vec_int y;
+  __cs149_mask maskAll, maskIsGreaterThanMax, maskIsNotNegative, maskExponentZero, maskExponentNotZero;
+  __cs149_mask maskActive;
+
+  //  Note: Take a careful look at this loop indexing.  This example
+  //  code is not guaranteed to work when (N % VECTOR_WIDTH) != 0.
+  //  Why is that the case?
+  for (int i=0; i<N; i+=VECTOR_WIDTH) {
+
+    int validLanes = std::min(VECTOR_WIDTH, N - i);
+    maskAll = _cs149_init_ones(validLanes);
+
+    // All zeros
+    maskIsGreaterThanMax = _cs149_init_ones(0);
+
+    // Load vector of values from contiguous memory addresses
+    _cs149_vload_float(x, values+i, maskAll);               // x = values[i];
+    _cs149_vload_int(y, exponents+i, maskAll);       // y = exponents[i]
+
+    maskExponentNotZero = _cs149_init_ones(0);
+    _cs149_vgt_int(maskExponentNotZero, y, zeroInt, maskAll);
+
+    result = onesFloat;
+    _cs149_vmove_float(result, x, maskExponentNotZero);
+
+    count = y;
+    _cs149_vsub_int(count, count, onesInt, maskExponentNotZero);
+
+    maskActive = _cs149_init_ones(0);
+    _cs149_vgt_int(maskActive, count, zeroInt, maskAll);
+    while (_cs149_cntbits(maskActive)) {
+      _cs149_vmult_float(result, result, x, maskActive);
+      _cs149_vsub_int(count, count, onesInt, maskActive);
+
+      _cs149_vgt_int(maskActive, count, zeroInt, maskAll);
+    }
+
+    _cs149_vgt_float(maskIsGreaterThanMax, result, maxValue, maskAll);     // if (result > 9.99999f) {
+
+    _cs149_vsub_float(result, maxValue, zeroFloat, maskIsGreaterThanMax);      //   result[i] = 9.999f;
+
+    // Write results back to memory
+    _cs149_vstore_float(output+i, result, maskAll);
+  }
   
 }
 
@@ -270,11 +323,16 @@ float arraySumVector(float* values, int N) {
   //
   // CS149 STUDENTS TODO: Implement your vectorized version of arraySumSerial here
   //
-  
+
+  __cs149_mask maskAll;
+
+  float sum = 0;
   for (int i=0; i<N; i+=VECTOR_WIDTH) {
+    int validLanes = std::min(VECTOR_WIDTH, N - i);
+    maskAll = _cs149_init_ones(validLanes);
+
 
   }
 
-  return 0.0;
+  return sum;
 }
-
